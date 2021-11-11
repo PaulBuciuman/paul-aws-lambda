@@ -1,25 +1,20 @@
 import os
 import hashlib
-from datetime import date
 import datetime as dt
 from smart_open import open
+import boto3
 
 PATH1 = "rss_feed/web_pages1/"
 PATH2 = "rss_feed/web_pages2/"
-BUCKET_PATH = "s3://aws-lambda-juniors/Paul/"
+
+
+s3 = boto3.resource("s3")
+BUCKET = s3.Bucket("aws-lambda-juniors")
+BUCKET_PATH = "s3://aws-lambda-juniors/"
 
 
 def hash_file(file):
     return hashlib.sha256(file.read().encode("utf-8")).hexdigest()
-
-
-def get_files_hashes(path):
-    file_hashes = []
-    files = [f for f in os.listdir(path)]
-    for file in files:
-        with open(os.path.join(path, file), "r") as f:
-            file_hashes.append(hash_file(f))
-    return file_hashes
 
 
 def concatenated_hash(hash1, hash2):
@@ -28,14 +23,19 @@ def concatenated_hash(hash1, hash2):
 
 
 def build_tree_nodes_list(save_date):
-    path = "rss_feed/" + save_date
+    # path = "rss_feed/" + save_date
+    prefix = "Paul/" + save_date + "/"
     tree_nodes = []
-    files = [f for f in os.listdir(path)]
+    # files = [f for f in os.listdir(path)]
+    files = [f for f in BUCKET.objects.filter(Prefix=prefix, Delimiter="/")]
     for file in files:
-        with open(os.path.join(path, file), "r") as f:
-            # with open(BUCKET_PATH + str(date.today()) + "/", "rb") as f:
+        print(file.key)
+        # with open(os.path.join(path, file), "r") as f:
+        with open(BUCKET_PATH + file.key, "r") as f:
             # print(hash_file(f))
-            tree_nodes.append(MerkleTreeNode(hash_file(f), file))
+            # print(f.read())
+            tree_nodes.append(MerkleTreeNode(hash_file(f), file.key.split("/")[-1]))
+            # print(f.read())
     return tree_nodes
 
 
@@ -105,4 +105,5 @@ root_node1 = build_merkle_tree(str(d1.date()))
 root_node2 = build_merkle_tree(str(d2.date()))
 
 diff_articles = compare_merkle_trees(root_node1, root_node2)
+print("Articles with differences: ")
 print(diff_articles)
