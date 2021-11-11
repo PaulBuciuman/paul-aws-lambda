@@ -1,7 +1,12 @@
 import os
 import hashlib
+from datetime import date
+import datetime as dt
+from smart_open import open
 
-PATH = "rss_feed/web_pages/"
+PATH1 = "rss_feed/web_pages1/"
+PATH2 = "rss_feed/web_pages2/"
+BUCKET_PATH = "s3://aws-lambda-juniors/Paul/"
 
 
 def hash_file(file):
@@ -22,10 +27,15 @@ def concatenated_hash(hash1, hash2):
     return hash(conc_hash)
 
 
-def build_tree_nodes_list(files_list):
+def build_tree_nodes_list(save_date):
+    path = "rss_feed/" + save_date
     tree_nodes = []
-    for file in files_list:
-        tree_nodes.append(MerkleTreeNode(file))
+    files = [f for f in os.listdir(path)]
+    for file in files:
+        with open(os.path.join(path, file), "r") as f:
+            # with open(BUCKET_PATH + str(date.today()) + "/", "rb") as f:
+            # print(hash_file(f))
+            tree_nodes.append(MerkleTreeNode(hash_file(f), file))
     return tree_nodes
 
 
@@ -55,8 +65,22 @@ def build_merkle_tree(files_list):
     return tree_nodes[0]
 
 
-def compare_merkle_trees(root1, root2):
+def tree_size(root):
     pass
+
+
+def compare_merkle_trees(root1, root2, diff_articles=[]):
+    if tree_size(root1) != tree_size(root2):
+        print("Trees have different sizes!")
+        return None
+    if root1 is not None and root2 is not None:
+        if root1.value != root2.value:
+            if root1.article_title is None and root2.article_title is None:
+                compare_merkle_trees(root1.left, root2.left, diff_articles)
+                compare_merkle_trees(root1.right, root2.right, diff_articles)
+            else:
+                diff_articles.append(root1.article_title)
+    return diff_articles
 
 
 def print_merkle_tree(root, level=0):
@@ -67,13 +91,18 @@ def print_merkle_tree(root, level=0):
 
 
 class MerkleTreeNode:
-    def __init__(self, value):
+    def __init__(self, value, article_title=None):
         self.left = None
         self.right = None
         self.value = value
+        self.article_title = article_title
 
 
-file_hashes = get_files_hashes(PATH)
-root_node = build_merkle_tree(file_hashes)
+d1 = dt.datetime(2021, 11, 10)
+d2 = dt.datetime(2021, 11, 11)
 
-print_merkle_tree(root_node)
+root_node1 = build_merkle_tree(str(d1.date()))
+root_node2 = build_merkle_tree(str(d2.date()))
+
+diff_articles = compare_merkle_trees(root_node1, root_node2)
+print(diff_articles)

@@ -1,29 +1,20 @@
 from chalice import Chalice
+import boto3
+from smart_open import open
 
 app = Chalice(app_name="lambda-project")
+BUCKET_PATH = "aws-lambda-juniors"
+
+s3 = boto3.resource("s3")
 
 
 @app.route("/")
 def index():
+    # return write_to_s3()
     return {"hello": "world"}
 
 
-# The view function above will return {"hello": "world"}
-# whenever you make an HTTP GET request to '/'.
-#
-# Here are a few more examples:
-#
-# @app.route('/hello/{name}')
-# def hello_name(name):
-#    # '/hello/james' -> {"hello": "james"}
-#    return {'hello': name}
-#
-# @app.route('/users', methods=['POST'])
-# def create_user():
-#     # This is the JSON body the user sent in their POST request.
-#     user_as_json = app.current_request.json_body
-#     # We'll echo the json body back to the user in a 'user' key.
-#     return {'user': user_as_json}
-#
-# See the README documentation for more examples.
-#
+@app.lambda_function()
+def write_to_s3(event, context):
+    return s3.Object(BUCKET_PATH, "Paul/helloworld.txt").put(Body=open("chalicelib/helloworld.txt", "rb"))
+    # return s3.put_object(Bucket=BUCKET_PATH, Key="Paul/helloworld.txt", Body=open("chalicelib/helloworld.txt", "rb"))
