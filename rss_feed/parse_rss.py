@@ -17,6 +17,7 @@ def download_articles_between(d1, d2):
     for item in soup.find_all("item"):
         pub_date_str = item.find("pubdate").get_text()[0:16]
         pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y")
+
         if d1 < pub_date < d2:
             item_url = item.find("guid").get_text()
             print(item_url)
