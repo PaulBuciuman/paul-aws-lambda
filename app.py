@@ -25,7 +25,7 @@ def pb_download_articles_to_s3():
 # reuse lambda to save podcast files as well - make it generic s that it doesn't care what it downloads
 # try to use youtube rss, youtube dl, take only the audio
 
-
+# 3 diff lambdas -
 @app.route("/compare")
 def pb_compare_merkle_trees():
     d1 = dt.datetime(2021, 11, 17)
