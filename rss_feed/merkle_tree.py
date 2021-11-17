@@ -1,6 +1,8 @@
 import os
 import hashlib
 import datetime as dt
+from datetime import datetime
+from datetime import date
 from smart_open import open
 import boto3
 
@@ -8,6 +10,10 @@ import boto3
 s3 = boto3.resource("s3")
 BUCKET = s3.Bucket("aws-lambda-juniors")
 BUCKET_PATH = "s3://aws-lambda-juniors/"
+
+
+client = boto3.client("s3")
+paginator = client.get_paginator("list_objects_v2")
 
 
 def hash_node(file):
@@ -32,11 +38,15 @@ def articles_exist(save_date):
 def build_tree_nodes_list(save_date, mutation=""):
     prefix = "Paul/" + save_date + "/"
     tree_nodes = []
-    files = [f for f in BUCKET.objects.filter(Prefix=prefix, Delimiter="/")]
-    for file in files:
-        print(file.key)
-        with open(BUCKET_PATH + file.key, "r") as f:
-            tree_nodes.append(MerkleTreeNode(hash_node(f.read() + mutation), file.key.split("/")[-1]))
+    # files = [f for f in BUCKET.objects.filter(Prefix=prefix, Delimiter="/")]
+
+    page_iterator = paginator.paginate(Bucket="aws-lambda-juniors", Prefix=prefix)
+    for page in page_iterator:
+        for item in page["Contents"]:
+            if item["Key"].endswith(".html"):
+                print(item["Key"])
+                with open(BUCKET_PATH + item["Key"], "r") as f:
+                    tree_nodes.append(MerkleTreeNode(hash_node(f.read() + mutation), item["Key"].split("/")[-1]))
     return tree_nodes
 
 
@@ -95,8 +105,8 @@ class MerkleTreeNode:
         self.article_title = article_title
 
 
-d1 = dt.datetime(2021, 11, 11)
-d2 = dt.datetime(2021, 11, 12)
+d1 = dt.datetime(2021, 11, 17)
+d2 = dt.datetime(2021, 11, 18)
 
 
 if articles_exist(d1) and articles_exist(d2):

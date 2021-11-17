@@ -1,7 +1,7 @@
 from chalice import Chalice
 import boto3
 from smart_open import open
-from rss_feed.parse_rss import download_articles_between
+from rss_feed.parse_rss import download_all_between
 from rss_feed.merkle_tree import compare_merkle_trees, build_merkle_tree, articles_exist
 import datetime as dt
 
@@ -18,21 +18,24 @@ def index():
 
 
 @app.lambda_function()
-def pb_write_to_s3(event, context):
-    return s3.put_object(Bucket=BUCKET_PATH, Key="Paul/hello.txt", Body=open("chalicelib/helloworld.txt", "rb"))
-
-
-@app.lambda_function()
 def pb_download_articles_to_s3():
-    d1 = dt.datetime(2021, 9, 10)
-    d2 = dt.datetime(2021, 10, 1)
-    download_articles_between(d1, d2)
+    d1 = dt.datetime(2021, 6, 29)
+    d2 = dt.datetime(2021, 7, 1)
+    download_all_between(d1, d2)
+
+
+# don't hardcode the arguments, parametrize in terminal
+# use SQS (chaining lambda functions) - runs automatically
+# parse html page and find all images there
+# trigger a lambda functon everytime a url is found, that will upload that image to s3
+# reuse lambda to save podcast files as well - make it generic s that it doesn't care what it downloads
+# try to use youtube rss, youtube dl, take only the audio
 
 
 @app.lambda_function()
 def pb_compare_merkle_trees():
-    d1 = dt.datetime(2021, 11, 11)
-    d2 = dt.datetime(2021, 11, 12)
+    d1 = dt.datetime(2021, 11, 17)
+    d2 = dt.datetime(2021, 11, 18)
 
     if articles_exist(d1) and articles_exist(d2):
         root1 = build_merkle_tree(str(d1.date()))
