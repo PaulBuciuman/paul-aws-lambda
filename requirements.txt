@@ -1,0 +1,2 @@
+smart-open==5.2.1
+chalice==1.26.2
