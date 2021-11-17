@@ -9,7 +9,7 @@ import shutil
 
 URL = "https://www.buzzfeed.com/world.xml"
 html_text = requests.get(URL).text
-soup = BeautifulSoup(html_text, "html.parser")
+rss_feed = BeautifulSoup(html_text, "html.parser")
 
 BUCKET_PATH = "s3://aws-lambda-juniors"
 
@@ -18,7 +18,7 @@ image_extensions = [".jpg", ".jpeg", ".png", ".gif"]
 
 def write_html(content, path, key):
     with open(
-        BUCKET_PATH + "/Paul/" + str(date.today() + dt.timedelta(days=1)) + "/" + path + "/" + key + ".html",
+        BUCKET_PATH + "/Paul/" + str(date.today() + dt.timedelta(days=0)) + "/" + path + "/" + key + ".html",
         "wb",
     ) as fid:
         fid.write(content)
@@ -26,7 +26,7 @@ def write_html(content, path, key):
 
 def write_image(image, path, key):
     with open(
-        BUCKET_PATH + "/Paul/" + str(date.today() + dt.timedelta(days=1)) + "/" + path + "/" + key,
+        BUCKET_PATH + "/Paul/" + str(date.today() + dt.timedelta(days=0)) + "/" + path + "/" + key,
         "wb",
     ) as fid:
         shutil.copyfileobj(image.raw, fid)
@@ -46,7 +46,7 @@ def get_item_title(item_url):
 
 
 def download_all_between(d1, d2):
-    for item in soup.find_all("item"):
+    for item in rss_feed.find_all("item"):
         pub_date_str = item.find("pubdate").get_text()[0:16]
         pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y")
 
