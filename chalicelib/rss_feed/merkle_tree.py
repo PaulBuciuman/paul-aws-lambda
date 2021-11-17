@@ -109,11 +109,11 @@ d1 = dt.datetime(2021, 11, 17)
 d2 = dt.datetime(2021, 11, 18)
 
 
-if articles_exist(d1) and articles_exist(d2):
-    root1 = build_merkle_tree(str(d1.date()))
-    root2 = build_merkle_tree(str(d2.date()))
-    diff_articles = compare_merkle_trees(root1, root2)
-    print("Articles with differences: ")
-    print(diff_articles)
-else:
-    print("Comparison not possible.One of the dates doesn't exist!")
+# if articles_exist(d1) and articles_exist(d2):
+#     root1 = build_merkle_tree(str(d1.date()))
+#     root2 = build_merkle_tree(str(d2.date()))
+#     diff_articles = compare_merkle_trees(root1, root2)
+#     print("Articles with differences: ")
+#     print(diff_articles)
+# else:
+#     print("Comparison not possible.One of the dates doesn't exist!")
