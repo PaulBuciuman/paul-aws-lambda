@@ -1,2 +1,4 @@
 .chalice/deployments/
 .chalice/venv/
+chalicelib/test_assets
+chalicelib/test_files

@@ -50,7 +50,7 @@ def get_item_title(item_url):
     return item_url.split("/")[-1]
 
 
-def get_article_from_rss(rss_feed_url, d1, d2):
+def get_articles_from_rss(rss_feed_url, d1, d2):
     rss_feed = convert_url_to_bs(rss_feed_url)
     for article in rss_feed.find_all("item"):
         pub_date_str = article.find("pubdate").get_text()[0:16]
@@ -63,10 +63,10 @@ def get_article_from_rss(rss_feed_url, d1, d2):
 def download_html(article_url, path):
     page = urllib2.urlopen(article_url)
     page_content = page.read()
-    local_path = get_local_path(path, get_item_title(article_url) + ".html")
+    # local_path = get_local_path(path, get_item_title(article_url) + ".html")
     # bucket_path = get_bucket_path(path, get_item_title(article_url), get_item_title(article_url) + ".html")
     with open(
-        local_path,
+        get_bucket_path(path, get_item_title(article_url), get_item_title(article_url) + ".html"),
         "wb",
     ) as fid:
         fid.write(page_content)
@@ -91,7 +91,8 @@ def download_assets(article_url, path):
     for image_url, image_file in images.items():
         count += 1
         with open(
-            get_local_path(path, get_item_title(image_url) + ".html"),
+            # get_local_path(path, get_item_title(image_url) + ".html"),
+            get_bucket_path(path, get_item_title(article_url), get_item_title(image_url) + ".html"),
             "wb",
         ) as fid:
             shutil.copyfileobj(image_file.raw, fid)
