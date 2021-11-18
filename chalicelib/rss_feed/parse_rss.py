@@ -66,7 +66,7 @@ def download_html(article_url, path):
     # local_path = get_local_path(path, get_item_title(article_url) + ".html")
     # bucket_path = get_bucket_path(path, get_item_title(article_url), get_item_title(article_url) + ".html")
     with open(
-        get_bucket_path(path, get_item_title(article_url), get_item_title(article_url) + ".html"),
+        get_bucket_path(path, get_item_title(article_url), get_item_title(article_url)),
         "wb",
     ) as fid:
         fid.write(page_content)

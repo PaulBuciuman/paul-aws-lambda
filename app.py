@@ -11,57 +11,38 @@ from chalicelib.rss_feed.parse_rss import (
 from chalicelib.rss_feed.merkle_tree import compare_merkle_trees, build_merkle_tree, articles_exist
 import datetime as dt
 import json
+import requests
 
 app = Chalice(app_name="lambda-project")
-BUCKET_PATH = "aws-lambda-juniors"
+BUCKET_PATH = "s3://aws-lambda-juniors"
 
 
 s3 = boto3.client("s3")
 lambda_client = boto3.client("lambda")
 
 URL = "https://www.buzzfeed.com/world.xml"
-# @app.route("/download")
-# def pb_download_articles_to_s3():
-#     d1 = dt.datetime(2021, 6, 29)
-#     d2 = dt.datetime(2021, 7, 1)
-#     download_all_between(d1, d2)
 
 
-# arn:aws:lambda:us-east-2:816286866474:function:lambda_project-dev
+@app.route("/read_article")
+def pb_read_articles_from_rss():
+    d1 = dt.datetime(2021, 6, 29)
+    d2 = dt.datetime(2021, 7, 1)
+    for article in get_articles_from_rss(URL, d1, d2):
+        return article
 
 
-# @app.route("/read_article")
-# def pb_read_articles_from_rss():
-#     for article in get_articles_from_rss(url, d1, d2):
-#         yield article
+@app.route("/download_html")
+def pb_download_html():
+    response = requests.get("https://dr2g4112b2.execute-api.us-east-2.amazonaws.com/api/read_article")
+
+    download_html(response.text, BUCKET_PATH)
+    return response.text
 
 
-# def lambda_handler(event, context):
-
-#     d1 = dt.datetime(2021, 6, 29)
-#     d2 = dt.datetime(2021, 7, 1)
-
-#     input_for_child = {"date1": d1, "date2": d2, "url": URL}
-
-#     response = lambda_client.invoke(
-#         FunctionName="arn:aws:lambda:us-east-2:816286866474:function:lambda_project-dev",
-#         InvocationType="RequestResponse",
-#         Payload=json.dumps(input_for_child),
-#     )
-#     return response
-
-
-# @app.route("/download_html")
-# def pb_download_html():
-#     # invoke pb_read_articles_from_rss(), returning articles
-#     article_url = ""
-#     download_html(article_url, BUCKET_PATH)
-
-
-# @app.route("/download_images")
-# def pb_download_images():
-#     article_url = ""
-#     download_assets(article_url, BUCKET_PATH)
+@app.route("/download_images")
+def pb_download_images():
+    article_url = ""
+    download_assets(article_url, BUCKET_PATH)
 
 
 # don't hardcode the arguments, parametrize in terminal
