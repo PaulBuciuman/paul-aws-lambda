@@ -1,22 +1,48 @@
 from chalice import Chalice
 import boto3
 from smart_open import open
-from chalicelib.rss_feed.parse_rss import download_all_between
+from chalicelib.rss_feed.parse_rss import (
+    get_articles_from_rss,
+    download_html,
+    get_bucket_path,
+    get_item_title,
+    download_assets,
+)
 from chalicelib.rss_feed.merkle_tree import compare_merkle_trees, build_merkle_tree, articles_exist
 import datetime as dt
+import json
+import requests
 
 app = Chalice(app_name="lambda-project")
-BUCKET_PATH = "aws-lambda-juniors"
+BUCKET_PATH = "s3://aws-lambda-juniors"
 
 
 s3 = boto3.client("s3")
+lambda_client = boto3.client("lambda")
+
+URL = "https://www.buzzfeed.com/world.xml"
 
 
-@app.route("/download")
-def pb_download_articles_to_s3():
+@app.route("/read_article")
+def pb_read_articles_from_rss():
     d1 = dt.datetime(2021, 6, 29)
     d2 = dt.datetime(2021, 7, 1)
-    download_all_between(d1, d2)
+    for article in get_articles_from_rss(URL, d1, d2):
+        return article
+
+
+@app.route("/download_html")
+def pb_download_html():
+    response = requests.get("https://dr2g4112b2.execute-api.us-east-2.amazonaws.com/api/read_article")
+
+    download_html(response.text, BUCKET_PATH)
+    return response.text
+
+
+@app.route("/download_images")
+def pb_download_images():
+    article_url = ""
+    download_assets(article_url, BUCKET_PATH)
 
 
 # don't hardcode the arguments, parametrize in terminal
