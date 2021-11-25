@@ -2,3 +2,11 @@
 .chalice/venv/
 chalicelib/test_assets
 chalicelib/test_files
+chalicelib/new_feed.xml
+chalicelib/rss_feed/x.txt
+chalicelib/rss_feed/y.txt
+chalicelib/rss_feed/z.txt
+chalicelib/tree.pkl
+feed.xml
+chalicelib/rss_feed/main_program.py
+2021-11-23
