@@ -4,28 +4,17 @@ import datetime as dt
 import urllib.request as urllib2
 from smart_open import open
 import shutil
-import utils
-import boto3
-import parser
-import tree_builder
-from tree_to_s3_operations import write_tree_to_s3
-
-
-URL = "https://www.buzzfeed.com/world.xml"
-
-BUCKET_PATH = "s3://aws-lambda-juniors"
-
-BUCKET = "aws-lambda-juniors"
-
-image_extensions = [".jpg", ".jpeg", ".png", ".gif"]
-
-LOCAL_PATH = "chalicelib/new_feed.xml"
-
-s3 = boto3.resource("s3")
+from . import utils
+from . import parser
+from . import tree_builder
+from . import tree_to_s3_operations
+from .constants import s3, BUCKET, BUCKET_PATH, paginator, client
+from io import StringIO
 
 
 def add_start_time(feed_url, start_time):
     file = start_time
+    print(f"adding start_time: {file}")
     try:
         with open(BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/start_times.txt", "r") as fid:
             file = fid.read()
@@ -49,16 +38,33 @@ def read_start_times(feed_url):
         return lines
 
 
+def read_start_time(feed_url):
+    start_times = []
+    prefix = "Paul/" + utils.hash_object(feed_url) + "/"
+
+    result = client.list_objects(Bucket="aws-lambda-juniors", Prefix=prefix, Delimiter="/")
+    if result.get("CommonPrefixes"):
+        for start_time in result.get("CommonPrefixes"):
+            start_times.append(start_time.get("Prefix").split("/")[-2])
+        return start_times
+    else:
+        return []
+
+
 def write_feed_to_s3(feed_url, start_time, feed_xml=None, trust_mode=True):
-    if not trust_mode:
-        add_start_time(feed_url, start_time)
     if feed_xml is None:
         feed_xml = parser.read_feed_xml_from_online(feed_url)
     with open(
         BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/" + start_time + "/rss_feed.xml",
         "w",
     ) as fid:
-        fid.write(str(feed_xml))
+        print(start_time)
+        print("writting to S333333333333")
+        try:
+            fid.write(str(feed_xml))
+            print("wrote to s3!!!!")
+        except Exception as e:
+            print(f"Exception: {e}")
 
 
 def copy_article(feed_url, article_hash, article_title, start_time_original, start_time_new):
@@ -143,7 +149,7 @@ def generate_tree(feed_url, start_time, start_time_original=None):
 
     tree_nodes = tree_builder.build_tree_nodes_list_from_bucket(feed_url, start_time, mandatory_article_titles)
     tree_root = tree_builder.build_merkle_tree(tree_nodes)
-    write_tree_to_s3(feed_url, tree_root, start_time)
+    tree_to_s3_operations.write_tree_to_s3(feed_url, tree_root, start_time)
     return tree_root
 
 
@@ -172,6 +178,9 @@ def get_only_new_articles(feed_url, bucket_feed):
 
 
 def append_to_feed(feed_url, start_time, bucket_feed, new_articles):
-    parser.append_new_articles_to_feed(bucket_feed, new_articles)
-    new_xml_feed = parser.read_feed_xml_from_local()
+    feed = parser.append_new_articles_to_feed(bucket_feed, new_articles)
+    file = StringIO(feed)
+
+    new_xml_feed = utils.convert_to_bs(file.read())
+    # new_xml_feed = parser.read_feed_xml_from_local()
     write_feed_to_s3(feed_url, start_time, new_xml_feed)

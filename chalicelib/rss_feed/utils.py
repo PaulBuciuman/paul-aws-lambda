@@ -1,9 +1,26 @@
 import hashlib
+from datetime import datetime as dt
+import datetime
+from bs4 import BeautifulSoup
 
 
 def concatenated_hash(hash1, hash2):
     conc_hash = hash_object(hash1 + hash2)
     return conc_hash
+
+
+def idempotent_check(start_time, all_start_times):
+    valid = False
+    valid = any(
+        time in all_start_times
+        for time in [
+            str(dt.strptime(start_time, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(seconds=4)),
+            str(dt.strptime(start_time, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(seconds=3)),
+            str(dt.strptime(start_time, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(seconds=2)),
+        ]
+    )
+
+    return not valid
 
 
 def hash_object(file):
@@ -25,3 +42,15 @@ def get_item_title(item_url):
 
 def get_item_url_hash(item_url):
     return item_url.split("/")[-2]
+
+
+def generate_current_time():
+    return dt.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_base_path(bucket_path, feed_url, start_time):
+    return bucket_path + "Paul/" + hash_object(feed_url) + "/" + start_time + "/merkle_tree.pkl"
+
+
+def convert_to_bs(obj):
+    return BeautifulSoup(obj, "lxml")

@@ -1,31 +1,30 @@
 from smart_open import open
-from merkle_tree import MerkleTreeNode
-import utils
+from . import merkle_tree
+from . import utils
 
-from parser import get_article_content, get_article_list_from_bucket
+from . import parser
 
-
-BUCKET_PATH = "s3://aws-lambda-juniors/"
+from .constants import BUCKET_PATH
 
 
 def create_tree_node(value, article_title):
-    return MerkleTreeNode(value, article_title)
+    return merkle_tree.MerkleTreeNode(value, article_title)
 
 
 def build_tree_nodes_list_from_article_list(articles):
     tree_nodes = []
     for article in articles:
         tree_nodes.append(
-            create_tree_node(utils.hash_object(get_article_content())), article.find("guid").text.split("/")[-1]
+            create_tree_node(utils.hash_object(parser.get_article_content())), article.find("guid").text.split("/")[-1]
         )
     return tree_nodes
 
 
 def build_tree_nodes_list_from_bucket(feed_url, start_time, mandatory_articles=[]):
     tree_nodes = []
-    articles = get_article_list_from_bucket(feed_url, start_time)
+    articles = parser.get_article_list_from_bucket(feed_url, start_time)
     for article in articles:
-        with open(BUCKET_PATH + article, "r") as f:
+        with open(BUCKET_PATH + "/" + article, "r") as f:
             if article.split("/")[-1] in mandatory_articles:
                 tree_nodes.append(create_tree_node(utils.hash_object(f.read()), article.split("/")[-1]))
     return tree_nodes
@@ -33,7 +32,7 @@ def build_tree_nodes_list_from_bucket(feed_url, start_time, mandatory_articles=[
 
 def build_parent_node(node1, node2):
     parent_hash = utils.concatenated_hash(node1.value, node2.value)
-    parent = MerkleTreeNode(parent_hash)
+    parent = merkle_tree.MerkleTreeNode(parent_hash)
     parent.left = node1
     parent.right = node2
     return parent
