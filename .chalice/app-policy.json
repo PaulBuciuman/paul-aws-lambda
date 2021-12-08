@@ -9,7 +9,8 @@
         "s3:GetObject",
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "s3:ListBucket"
       ],
       "Resource": [
         "*"

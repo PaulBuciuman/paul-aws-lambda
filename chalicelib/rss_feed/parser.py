@@ -4,20 +4,9 @@ from datetime import datetime
 import urllib.request as urllib2
 from smart_open import open
 import shutil
-import utils
-import boto3
+from . import utils
 
-
-URL = "https://www.buzzfeed.com/world.xml"
-
-BUCKET_PATH = "s3://aws-lambda-juniors"
-
-image_extensions = [".jpg", ".jpeg", ".png", ".gif"]
-
-LOCAL_PATH = "chalicelib/new_feed.xml"
-
-client = boto3.client("s3")
-paginator = client.get_paginator("list_objects_v2")
+from .constants import BUCKET_PATH, paginator, LOCAL_PATH
 
 
 # s3://[user_id]/OPML  # <-Keeps all the feeds monitored
@@ -28,16 +17,6 @@ paginator = client.get_paginator("list_objects_v2")
 # s3://[user_id]/[feed_url_hash]/[start_time]/items/[url_hash]/assets/js/[js_url_hash].js
 # s3://[user_id]/[feed_url_hash]/[start_time]/items/[url_hash]/assets/img/[img_url_hash].[img_ext]
 # s3://[user_id]/[feed_url_hash]/[start_time]/items/[url_hash]/assets/css/[css_url_hash].css
-
-
-# def articles_exist(save_date):
-#     date_exists = False
-#     for key in BUCKET.objects.all():
-#         if str(save_date.date()) in str(key):
-#             date_exists = True
-#     if not date_exists:
-#         print(f"There is no article from {save_date.date()}")
-#     return date_exists
 
 
 def parse_images(page):
@@ -57,7 +36,8 @@ def convert_page_to_bs(url):
 
 def read_feed_xml_from_online(feed_url):
     feed = urllib2.urlopen(feed_url)
-    return BeautifulSoup(feed.read(), "lxml")
+    # return BeautifulSoup(feed.read(), "lxml")
+    return utils.convert_to_bs(feed.read())
 
 
 def read_feed_xml_from_bucket(feed_url, start_time):
@@ -65,7 +45,8 @@ def read_feed_xml_from_bucket(feed_url, start_time):
         BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/" + str(start_time) + "/rss_feed.xml",
         "r",
     ) as f:
-        return BeautifulSoup(f.read(), "lxml")
+        return utils.convert_to_bs(f.read())
+        # return BeautifulSoup(f.read(), "lxml")
 
 
 def read_feed_xml_from_local():
@@ -73,12 +54,15 @@ def read_feed_xml_from_local():
         LOCAL_PATH,
         "r",
     ) as f:
-        return BeautifulSoup(f.read(), "lxml")
+        return utils.convert_to_bs(f.read())
+        # return BeautifulSoup(f.read(), "lxml")
 
 
 def get_article_list_from_bucket(feed_url, start_time):
     articles = []
+
     prefix = "Paul/" + utils.hash_object(feed_url) + "/" + str(start_time) + "/items/"
+    print(prefix)
     page_iterator = paginator.paginate(Bucket="aws-lambda-juniors", Prefix=prefix)
     for page in page_iterator:
         for item in page["Contents"]:
@@ -102,14 +86,14 @@ def append_new_articles_to_feed(feed, articles):
         new_tag = feed.new_tag("item")
         new_tag.contents = item.contents
         feed.rss.channel.image.insert_after(new_tag)
-    with open(LOCAL_PATH, "w") as f:
-        f.write(str(feed))
+    return str(feed)
+    # with open(LOCAL_PATH, "w") as f:
+    #     f.write(str(feed))
 
 
 def most_recent_article_date(feed_xml):
     first_item = feed_xml.find("item")
     pub_date_str = first_item.find("pubdate").get_text()[0:-6]
-    # pub_date_str = "Fri, 11 Nov 2021"
     pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S")
     return pub_date
 
