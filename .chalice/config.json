@@ -7,7 +7,7 @@
       "manage_iam_role": true,
       "autogen_policy": false,
       "iam_policy_file":"app-policy.json",
-      "lambda_timeout" : 120
+      "lambda_timeout" : 900
 
     }
   }
