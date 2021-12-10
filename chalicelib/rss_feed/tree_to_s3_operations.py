@@ -1,15 +1,20 @@
 from smart_open import open
 import pickle
-from . import merkle_tree
-from .tree_builder import build_parent_node, build_tree_nodes_list_from_article_list
-from . import utils
-from .constants import BUCKET_PATH
+from chalicelib.rss_feed import merkle_tree
+from chalicelib.rss_feed.tree_builder import (
+    build_parent_node,
+    build_tree_nodes_list_from_article_list,
+    parser,
+    build_merkle_tree,
+    build_tree_nodes_list_from_bucket,
+)
+from chalicelib.utils import util
 
 
 def write_tree_to_s3(feed_url, root, start_time):
     pickle_root = pickle.dumps(root)
     with open(
-        BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/" + start_time + "/merkle_tree.pkl",
+        util.bucket_path(feed_url, start_time) + "/merkle_tree.pkl",
         "wb",
     ) as fid:
         fid.write(pickle_root)
@@ -17,7 +22,7 @@ def write_tree_to_s3(feed_url, root, start_time):
 
 def read_tree_from_s3(feed_url, start_time):
     with open(
-        BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/" + start_time + "/merkle_tree.pkl",
+        util.bucket_path(feed_url, start_time) + "/merkle_tree.pkl",
         "rb",
     ) as fid:
         return pickle.load(fid)
@@ -42,3 +47,17 @@ def append_to_tree(feed_url, new_articles, start_time):
     write_tree_to_s3(feed_url, tree, start_time)
     for new_node in new_tree_nodes:
         append_new_articles_to_tree(tree, new_node)
+
+
+def generate_tree(feed_url, start_time, start_time_original=None):
+    mandatory_articles = parser.get_article_list_from_bucket(feed_url, start_time)
+    mandatory_article_titles = list(map(lambda a: a.split("/")[-1], mandatory_articles))
+
+    if start_time_original is not None:
+        mandatory_articles = parser.get_article_list_from_bucket(feed_url, start_time_original)
+        mandatory_article_titles = list(map(lambda a: a.split("/")[-1], mandatory_articles))
+
+    tree_nodes = build_tree_nodes_list_from_bucket(feed_url, start_time, mandatory_article_titles)
+    tree_root = build_merkle_tree(tree_nodes)
+    write_tree_to_s3(feed_url, tree_root, start_time)
+    return tree_root

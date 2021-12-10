@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime as dt
 import datetime
 from bs4 import BeautifulSoup
+from chalicelib.myconstants import BUCKET_PATH
 
 
 def concatenated_hash(hash1, hash2):
@@ -11,6 +12,7 @@ def concatenated_hash(hash1, hash2):
 
 def idempotent_check(start_time, all_start_times):
     valid = False
+    print(f"START TIME: {start_time} \n ALL TIMES: {all_start_times}")
     valid = any(
         time in all_start_times
         for time in [
@@ -36,6 +38,10 @@ def is_power_of_2(n):
         return False
 
 
+def bucket_path(feed_url, start_time):
+    return BUCKET_PATH + "/Paul/" + hash_object(feed_url) + "/" + start_time
+
+
 def get_item_title(item_url):
     return item_url.split("/")[-1]
 
@@ -54,3 +60,7 @@ def get_base_path(bucket_path, feed_url, start_time):
 
 def convert_to_bs(obj):
     return BeautifulSoup(obj, "lxml")
+
+
+def format_string_date(string_date):
+    return datetime.strptime(string_date, "%a, %d %b %Y %H:%M:%S")

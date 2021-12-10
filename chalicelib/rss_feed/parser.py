@@ -4,9 +4,9 @@ from datetime import datetime
 import urllib.request as urllib2
 from smart_open import open
 import shutil
-from . import utils
+from chalicelib.utils import util
 
-from .constants import BUCKET_PATH, paginator, LOCAL_PATH
+from chalicelib.myconstants import paginator, BUCKET_NAME
 
 
 # s3://[user_id]/OPML  # <-Keeps all the feeds monitored
@@ -36,34 +36,29 @@ def convert_page_to_bs(url):
 
 def read_feed_xml_from_online(feed_url):
     feed = urllib2.urlopen(feed_url)
-    # return BeautifulSoup(feed.read(), "lxml")
-    return utils.convert_to_bs(feed.read())
+    return util.convert_to_bs(feed.read())
 
 
 def read_feed_xml_from_bucket(feed_url, start_time):
     with open(
-        BUCKET_PATH + "/Paul/" + utils.hash_object(feed_url) + "/" + str(start_time) + "/rss_feed.xml",
+        util.bucket_path(feed_url, start_time) + "/rss_feed.xml",
         "r",
     ) as f:
-        return utils.convert_to_bs(f.read())
-        # return BeautifulSoup(f.read(), "lxml")
+        return util.convert_to_bs(f.read())
 
 
-def read_feed_xml_from_local():
-    with open(
-        LOCAL_PATH,
-        "r",
-    ) as f:
-        return utils.convert_to_bs(f.read())
-        # return BeautifulSoup(f.read(), "lxml")
+# def read_feed_xml_from_local():
+#     with open(
+#         LOCAL_PATH,
+#         "r",
+#     ) as f:
+#         return util.convert_to_bs(f.read())
 
 
 def get_article_list_from_bucket(feed_url, start_time):
     articles = []
-
-    prefix = "Paul/" + utils.hash_object(feed_url) + "/" + str(start_time) + "/items/"
-    print(prefix)
-    page_iterator = paginator.paginate(Bucket="aws-lambda-juniors", Prefix=prefix)
+    prefix = "Paul/" + util.hash_object(feed_url) + "/" + str(start_time) + "/items/"
+    page_iterator = paginator.paginate(Bucket=BUCKET_NAME, Prefix=prefix)
     for page in page_iterator:
         for item in page["Contents"]:
             if item["Key"].endswith(".html"):
@@ -75,7 +70,7 @@ def get_new_articles(feed, most_recent_date):
     new_articles = []
     for item in feed.find_all("item"):
         pub_date_str = item.find("pubdate").get_text()[0:-6]
-        pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S")
+        pub_date = util.format_string_date(pub_date_str)
         if pub_date > most_recent_date:
             new_articles.append(item)
     return new_articles
@@ -87,14 +82,12 @@ def append_new_articles_to_feed(feed, articles):
         new_tag.contents = item.contents
         feed.rss.channel.image.insert_after(new_tag)
     return str(feed)
-    # with open(LOCAL_PATH, "w") as f:
-    #     f.write(str(feed))
 
 
 def most_recent_article_date(feed_xml):
     first_item = feed_xml.find("item")
     pub_date_str = first_item.find("pubdate").get_text()[0:-6]
-    pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S")
+    pub_date = util.format_string_date(pub_date_str)
     return pub_date
 
 

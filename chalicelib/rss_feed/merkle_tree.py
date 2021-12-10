@@ -1,4 +1,4 @@
-from . import utils
+from chalicelib.utils import util
 
 
 class MerkleTreeNode:
@@ -18,7 +18,7 @@ def print_merkle_tree(root, level=0):
 
 def complete_tree(root):
     size = tree_size(root)
-    if utils.is_power_of_2(size + 1):
+    if util.is_power_of_2(size + 1):
         return True
     else:
         return False
